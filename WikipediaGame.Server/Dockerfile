@@ -1,6 +1,6 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM node:14.16.0-alpine as clientbulid
+FROM node:16-alpine as clientbulid
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 COPY WikipediaGame.Server/ClientApp/package.json ./
