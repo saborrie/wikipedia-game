@@ -6,7 +6,7 @@ ENV PATH /app/node_modules/.bin:$PATH
 COPY WikipediaGame.Server/ClientApp/package.json ./
 COPY WikipediaGame.Server/ClientApp/yarn.lock ./
 RUN yarn --network-timeout 1000000 --frozen-lockfile --prod 
-COPY ClientApp/ ./
+COPY WikipediaGame.Server/ClientApp/ ./
 RUN yarn build
 
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
