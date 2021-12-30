@@ -3,8 +3,8 @@
 FROM node:14.16.0-alpine as clientbulid
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
-COPY ClientApp/package.json ./
-COPY ClientApp/yarn.lock ./
+COPY WikipediaGame.Server/ClientApp/package.json ./
+COPY WikipediaGame.Server/ClientApp/yarn.lock ./
 RUN yarn --network-timeout 1000000 --frozen-lockfile --prod 
 COPY ClientApp/ ./
 RUN yarn build
