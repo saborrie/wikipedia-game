@@ -7,10 +7,17 @@ function Form() {
   const connection = useConnection();
 
   const [name, setName] = React.useState("");
+  const [gameCode, setGameCode] = React.useState("");
   const [log, setLog] = React.useState<any[]>([]);
 
-  function handleClick() {
-    connection?.send("SayHello", name);
+  function handleCreate() {
+    connection?.send("CreateGame", name);
+  }
+  function handleJoin() {
+    connection?.send("JoinGame", name, gameCode);
+  }
+  function handleLeave() {
+    connection?.send("LeaveGame");
   }
 
   React.useEffect(() => {
@@ -23,13 +30,25 @@ function Form() {
 
   return (
     <div>
+      <div>Create game</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="What is  your name?"
       />
-      <button onClick={handleClick}>Send</button>
-      <div>{JSON.stringify(log)}</div>
+      <button onClick={handleCreate}>Create</button>
+      <div>Or join game</div>
+      <input
+        value={gameCode}
+        onChange={(e) => setGameCode(e.target.value)}
+        placeholder="Gamecode"
+      />
+      <button onClick={handleJoin}>Join</button>
+      <button onClick={handleLeave}>Leave</button>
+
+      {log.map((x) => (
+        <div>{JSON.stringify(x)}</div>
+      ))}
     </div>
   );
 }

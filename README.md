@@ -11,3 +11,4 @@ Inspired by Tom Scott's "Two of these people are lying", this work is an attmept
 - all screens updating together
 - joining as a spectator when a round is in progress
 - keeping score
+- persisting to postgres on render.com
