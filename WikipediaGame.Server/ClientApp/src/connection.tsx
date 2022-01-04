@@ -15,6 +15,14 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
 
       await newConnection.start();
       setConnection(newConnection);
+
+      newConnection.onclose(() => {
+        setConnection(null);
+      });
+
+      newConnection.onreconnected(() => {
+        setConnection(newConnection);
+      });
     }
 
     setupConnection();

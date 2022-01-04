@@ -10,10 +10,15 @@ namespace WikipediaGame.Server.Grains
     {
         public interface IConnectionGrain : IGrainWithStringKey
         {
-            Task CreateGame(string username);
+            Task CreateGameAsync(string username);
             Task JoinGameAsync(string username, string gameCode);
             Task LeaveGameAsync();
             Task DisconnectAsync();
+            Task BecomeGuesserAsync();
+            Task ResetAsync();
+            Task SetArticleAsync(Game.Article? article);
+            Task MakeGuessAsync(string username);
+            Task StartRoundAsync();
         }
 
         public class ConnectionGrain : Grain, IConnectionGrain, Game.IGameObserver
@@ -29,7 +34,7 @@ namespace WikipediaGame.Server.Grains
                 this.hub = hub;
             }
 
-            public async Task CreateGame(string username)
+            public async Task CreateGameAsync(string username)
             {
                 if (this.gameCode != null)
                 {
@@ -94,11 +99,15 @@ namespace WikipediaGame.Server.Grains
                 }
 
                 var game = this.GetGame();
-                await game.RemovePlayerAsync(this.username);
                 await game.Unsubscribe(this);
+                await game.RemovePlayerAsync(this.username);
                 this.username = null;
                 this.gameCode = null;
 
+                await this.hub.UpdateAsync(this.ConnectionId, new PlayHubHelper.ConnectionUpdate
+                {
+                    InGame = false,
+                });
             }
 
             public void OnGameUpdated(Game.GameState state)
@@ -109,12 +118,39 @@ namespace WikipediaGame.Server.Grains
                     Game = new PlayHubHelper.GameView
                     {
                         GameCode = state.GameCode,
+                        Events = state.Events,
+                        Answer = state.Answer != null ? new PlayHubHelper.AnswerView
+                        {
+                            Username = state.Answer.Username,
+                            Article = MapToArticle(state.Answer.Article)
+                        } : null,
+                        InPlay = state.InPlay,
+                        Revealed = state.Revealed,
+                        Clue = state.Clue,
+                        Username = this.username,
+                        Options = state.Options,
                         Players = state.Players?.Select(x => new PlayHubHelper.PlayerView
                         {
                             Name = x.Name,
-                        }).ToList()
+                            IsGuesser = x.IsGuesser,
+                            HasArticle = x.HasArticle,
+                        }).ToList(),
+                        Article = MapToArticle(state.Players?.FirstOrDefault(x => x.Name == this.username)?.Article)
                     }
                 });
+            }
+
+            private static PlayHubHelper.ArticleView MapToArticle(Game.Article? article)
+            {
+                if (article == null) return null;
+
+                return new PlayHubHelper.ArticleView
+                {
+                    Id = article.Id,
+                    Name = article.Name,
+                    Description = article.Description,
+                    Extract = article.Extract,
+                };
             }
 
             public async Task DisconnectAsync()
@@ -122,6 +158,45 @@ namespace WikipediaGame.Server.Grains
                 await this.LeaveGameAsync();
                 this.DeactivateOnIdle();
             }
+
+            public async Task BecomeGuesserAsync()
+            {
+                CheckInGame("become guesser");
+                await GetGame().SetGuesserAsync(this.username!);
+            }
+
+            public async Task ResetAsync()
+            {
+                CheckInGame("reset");
+                await GetGame().ResetAsync();
+            }
+
+            public async Task MakeGuessAsync(string username)
+            {
+                CheckInGame("make guess");
+                await GetGame().MakeGuessAsync(this.username!, username);
+            }
+
+            public async Task SetArticleAsync(Game.Article? article)
+            {
+                CheckInGame("set article");
+                await GetGame().SetArticleAsync(this.username!, article);
+            }
+            public async Task StartRoundAsync()
+            {
+                CheckInGame("start round");
+                await GetGame().StartRoundAsync();
+            }
+
+            private void CheckInGame(string action)
+            {
+                if (this.gameCode is null)
+                {
+                    throw new InvalidOperationException($"Cannot {action}, not in a game.");
+                }
+            }
+
+            
         }
     }
 }
