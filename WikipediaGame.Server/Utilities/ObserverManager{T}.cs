@@ -11,9 +11,8 @@ namespace WikipediaGame.Server.Utilities
 {
     public class ObserverManager<TObserver> : ObserverManager<IAddressable, TObserver>
     {
-        public ObserverManager(TimeSpan expiration, ILogger log, string logPrefix) : base(expiration, log, logPrefix)
-        {
-        }
+        public ObserverManager(TimeSpan expiration, ILogger log, string logPrefix)
+            : base(expiration, log, logPrefix) { }
     }
 
     /// <summary>
@@ -37,7 +36,8 @@ namespace WikipediaGame.Server.Utilities
         /// </summary>
 #pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 #pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
-        private readonly ConcurrentDictionary<TAddress, ObserverEntry> observers = new ConcurrentDictionary<TAddress, ObserverEntry>();
+        private readonly ConcurrentDictionary<TAddress, ObserverEntry> observers =
+            new ConcurrentDictionary<TAddress, ObserverEntry>();
 #pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 #pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 
@@ -121,7 +121,12 @@ namespace WikipediaGame.Server.Utilities
                 entry.Observer = observer;
                 if (this.log.IsEnabled(LogLevel.Debug))
                 {
-                    this.log.LogDebug(this.logPrefix + ": Updating entry for {0}/{1}. {2} total subscribers.", address, observer, this.observers.Count);
+                    this.log.LogDebug(
+                        this.logPrefix + ": Updating entry for {0}/{1}. {2} total subscribers.",
+                        address,
+                        observer,
+                        this.observers.Count
+                    );
                 }
             }
             else
@@ -129,7 +134,13 @@ namespace WikipediaGame.Server.Utilities
                 this.observers[address] = new ObserverEntry { LastSeen = now, Observer = observer };
                 if (this.log.IsEnabled(LogLevel.Debug))
                 {
-                    this.log.LogDebug(this.logPrefix + ": Adding entry for {0}/{1}. {2} total subscribers after add.", address, observer, this.observers.Count);
+                    this.log.LogDebug(
+                        this.logPrefix
+                            + ": Adding entry for {0}/{1}. {2} total subscribers after add.",
+                        address,
+                        observer,
+                        this.observers.Count
+                    );
                 }
             }
         }
@@ -142,7 +153,11 @@ namespace WikipediaGame.Server.Utilities
         /// </param>
         public void Unsubscribe(TAddress subscriber)
         {
-            this.log.LogDebug(this.logPrefix + ": Removed entry for {0}. {1} total subscribers after remove.", subscriber, this.observers.Count);
+            this.log.LogDebug(
+                this.logPrefix + ": Removed entry for {0}. {1} total subscribers after remove.",
+                subscriber,
+                this.observers.Count
+            );
             this.observers.TryRemove(subscriber, out _);
         }
 
@@ -159,7 +174,10 @@ namespace WikipediaGame.Server.Utilities
         /// A <see cref="Task"/> representing the work performed.
         /// </returns>
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        public async Task Notify(Func<TObserver, Task> notification, Func<TObserver, bool> predicate = null)
+        public async Task Notify(
+            Func<TObserver, Task> notification,
+            Func<TObserver, bool> predicate = null
+        )
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
         {
             var now = this.GetDateTime();
@@ -200,7 +218,12 @@ namespace WikipediaGame.Server.Utilities
                     this.observers.TryRemove(observer, out _);
                     if (this.log.IsEnabled(LogLevel.Debug))
                     {
-                        this.log.LogDebug(this.logPrefix + ": Removing defunct entry for {0}. {1} total subscribers after remove.", observer, this.observers.Count);
+                        this.log.LogDebug(
+                            this.logPrefix
+                                + ": Removing defunct entry for {0}. {1} total subscribers after remove.",
+                            observer,
+                            this.observers.Count
+                        );
                     }
                 }
             }
@@ -255,7 +278,12 @@ namespace WikipediaGame.Server.Utilities
                     this.observers.TryRemove(observer, out _);
                     if (this.log.IsEnabled(LogLevel.Debug))
                     {
-                        this.log.LogDebug(this.logPrefix + ": Removing defunct entry for {0}. {1} total subscribers after remove.", observer, this.observers.Count);
+                        this.log.LogDebug(
+                            this.logPrefix
+                                + ": Removing defunct entry for {0}. {1} total subscribers after remove.",
+                            observer,
+                            this.observers.Count
+                        );
                     }
                 }
             }
@@ -281,7 +309,10 @@ namespace WikipediaGame.Server.Utilities
             // Remove defunct observers.
             if (defunct != default(List<TAddress>) && defunct.Count > 0)
             {
-                this.log.Info(this.logPrefix + ": Removing {0} defunct observers entries.", defunct.Count);
+                this.log.Info(
+                    this.logPrefix + ": Removing {0} defunct observers entries.",
+                    defunct.Count
+                );
                 foreach (var observer in defunct)
                 {
                     this.observers.TryRemove(observer, out _);

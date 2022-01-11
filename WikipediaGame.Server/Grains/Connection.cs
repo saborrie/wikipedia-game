@@ -19,6 +19,9 @@ namespace WikipediaGame.Server.Grains
             Task SetArticleAsync(Game.Article? article);
             Task MakeGuessAsync(string username);
             Task StartRoundAsync();
+            Task RequestUpdatedStateAsync();
+
+
         }
 
         public class ConnectionGrain : Grain, IConnectionGrain, Game.IGameObserver
@@ -26,6 +29,10 @@ namespace WikipediaGame.Server.Grains
             private readonly PlayHubHelper hub;
             private string? gameCode;
             private string? username;
+            private DateTime? lastDisconnected;
+            private IDisposable? checkDisconnectionTimer;
+            private PlayHubHelper.ConnectionUpdate lastState;
+            private readonly static TimeSpan diconnectionTimeSpan = TimeSpan.FromMinutes(1);
 
             public string ConnectionId => this.GetPrimaryKeyString();
 
@@ -34,9 +41,29 @@ namespace WikipediaGame.Server.Grains
                 this.hub = hub;
             }
 
+            public override async Task OnActivateAsync()
+            {
+                this.ResetState();
+                this.SendUpdatedState();
+                
+                this.checkDisconnectionTimer = this.RegisterTimer(this.CheckDisconnection, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+
+                await base.OnActivateAsync();
+            }
+
+            private async Task CheckDisconnection(object arg)
+            {
+                if (this.lastDisconnected.HasValue && (this.lastDisconnected.Value + diconnectionTimeSpan) < DateTime.UtcNow)
+                {
+                    this.checkDisconnectionTimer?.Dispose();
+                    await this.LeaveGameAsync();
+                    this.DeactivateOnIdle();
+                }
+            }
+
             public async Task CreateGameAsync(string username)
             {
-                if (this.gameCode != null)
+                if (this.lastState.InGame)
                 {
                     throw new InvalidOperationException("Cannot create a new game, must leave current game first.");
                 }
@@ -88,7 +115,7 @@ namespace WikipediaGame.Server.Grains
 
             public async Task LeaveGameAsync()
             {
-                if (this.gameCode is null)
+                if (!this.lastState.InGame)
                 {
                     throw new InvalidOperationException("Cannot leave game. Not in a game.");
                 }
@@ -103,16 +130,21 @@ namespace WikipediaGame.Server.Grains
                 await game.RemovePlayerAsync(this.username);
                 this.username = null;
                 this.gameCode = null;
+                ResetState();
+                SendUpdatedState();
+            }
 
-                await this.hub.UpdateAsync(this.ConnectionId, new PlayHubHelper.ConnectionUpdate
+            private void ResetState()
+            {
+                this.lastState = new PlayHubHelper.ConnectionUpdate
                 {
                     InGame = false,
-                });
+                };
             }
 
             public void OnGameUpdated(Game.GameState state)
             {
-                _ = this.hub.UpdateAsync(this.ConnectionId, new PlayHubHelper.ConnectionUpdate
+                this.lastState = new PlayHubHelper.ConnectionUpdate
                 {
                     InGame = true,
                     Game = new PlayHubHelper.GameView
@@ -137,10 +169,16 @@ namespace WikipediaGame.Server.Grains
                         }).ToList(),
                         Article = MapToArticle(state.Players?.FirstOrDefault(x => x.Name == this.username)?.Article)
                     }
-                });
+                };
+                SendUpdatedState();
             }
 
-            private static PlayHubHelper.ArticleView MapToArticle(Game.Article? article)
+            private void SendUpdatedState()
+            {
+                _ = this.hub.UpdateAsync(this.ConnectionId, this.lastState);
+            }
+
+            private static PlayHubHelper.ArticleView? MapToArticle(Game.Article? article)
             {
                 if (article == null) return null;
 
@@ -155,8 +193,7 @@ namespace WikipediaGame.Server.Grains
 
             public async Task DisconnectAsync()
             {
-                await this.LeaveGameAsync();
-                this.DeactivateOnIdle();
+                    this.lastDisconnected = DateTime.UtcNow;
             }
 
             public async Task BecomeGuesserAsync()
@@ -196,7 +233,12 @@ namespace WikipediaGame.Server.Grains
                 }
             }
 
-            
+            public Task RequestUpdatedStateAsync()
+            {
+                this.lastDisconnected = null;
+                this.SendUpdatedState();
+                return Task.CompletedTask;
+            }
         }
     }
 }

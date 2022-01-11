@@ -163,7 +163,7 @@ export default function GameScreen() {
 
     const isFullyReady =
       game?.state?.game?.players?.some((x) => x.isGuesser) === true &&
-      !game?.state?.game?.players?.some((x) => !x.isGuesser && !x.hasArticle) === true;
+      game?.state?.game?.players?.filter((x) => !x.isGuesser && x.hasArticle).length >= 2;
 
     return (
       <>
@@ -178,7 +178,7 @@ export default function GameScreen() {
           {isFullyReady ? (
             <Typography>Everyone is ready, lets go!</Typography>
           ) : (
-            <Typography>Waiting for a guesser and all other players to be ready.</Typography>
+            <Typography>Waiting for a guesser and at least 2 other players to be ready.</Typography>
           )}
         </Paper>
       </>
@@ -227,7 +227,7 @@ export default function GameScreen() {
         <Container maxWidth="sm">
           <Toolbar disableGutters>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Game {game.state?.game?.gameCode}
+              Wikipedia Game
             </Typography>
             <Button color="inherit" onClick={() => game.leaveGame()}>
               Leave
@@ -235,14 +235,37 @@ export default function GameScreen() {
           </Toolbar>
         </Container>
       </AppBar>
-      <Container maxWidth="sm" sx={{ marginTop: 2 }}>
-        <Typography variant="subtitle1">Players</Typography>
+      <Container maxWidth="sm" sx={{ marginTop: 2, mb: 12 }}>
+        <Toolbar variant="dense" disableGutters>
+          <Typography variant="subtitle1" sx={{ flexGrow: "1" }}>
+            Players
+          </Typography>
+          <Button
+            size="small"
+            onClick={() =>
+              navigator.clipboard.writeText(
+                `${window.location.origin}/${game.state?.game?.gameCode}`
+              )
+            }
+          >
+            Copy invite link
+          </Button>
+        </Toolbar>
+
         <TableContainer sx={{ marginTop: 1, marginBottom: 2 }} component={Paper}>
           <Table size="small" aria-label="a dense table">
             <TableBody>
               {game.state?.game?.players?.map((player) => (
                 <StyledTableRow key={player.name}>
-                  <TableCell component="th" scope="row">
+                  <TableCell
+                    component="th"
+                    scope="row"
+                    sx={
+                      game.state?.game?.username === player.name
+                        ? { color: "primary.main", fontWeight: "bold" }
+                        : {}
+                    }
+                  >
                     {player.name}
                   </TableCell>
                   <TableCell align="right">

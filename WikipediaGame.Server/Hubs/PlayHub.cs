@@ -15,10 +15,15 @@ namespace WikipediaGame.Server.Hubs
             this.orleans = orleans;
         }
 
-        public override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
-            this.GetGrain();
-            return Task.CompletedTask;
+            if (this.AccessToken == null)
+            {
+                throw new InvalidOperationException("No authenticated.");
+            }
+
+            await this.Groups.AddToGroupAsync(this.Context.ConnectionId, this.AccessToken);
+            await this.GetGrain().RequestUpdatedStateAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
@@ -44,9 +49,11 @@ namespace WikipediaGame.Server.Hubs
 
         public async Task RemoveArticle() => await this.GetGrain().SetArticleAsync(null);
 
+        private string? AccessToken => this.Context.GetHttpContext()?.Request.Query["access_token"];
+
         private Connection.IConnectionGrain GetGrain()
         {
-            return this.orleans.GetGrain<Connection.IConnectionGrain>(this.Context.ConnectionId);
+            return this.orleans.GetGrain<Connection.IConnectionGrain>(AccessToken);
         }       
     }
 }

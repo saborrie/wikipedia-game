@@ -178,14 +178,16 @@ namespace WikipediaGame.Server.Grains
             {
                 AssertNotInPlay("start round");
 
-                if (this.guesser == null || this.articles.Count < this.playerIds.Count(x => x != this.guesser))
+                var potentialOptions = this.articles.Keys.Where(a => a != this.guesser).ToList();
+
+                if (this.guesser == null || potentialOptions.Count < 2)
                 {
                     throw new InvalidOperationException("Cannot start round. Must have a guesser and all articles ready.");
                 }
 
                 // randomly select a non-guesser
                 var random = new Random();
-                this.options = this.playerIds.Where(x => x != this.guesser).ToList();
+                this.options = potentialOptions;
                 int index = random.Next(options.Count);
 
                 this.answer = new Answer
@@ -198,7 +200,7 @@ namespace WikipediaGame.Server.Grains
 
                 this.NotifySubscribers();
                 return Task.CompletedTask;
-            }
+            } 
 
             public Task SubscribeAsync(IGameObserver observer)
             {

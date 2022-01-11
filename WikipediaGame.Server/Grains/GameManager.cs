@@ -16,7 +16,7 @@ namespace WikipediaGame.Server.Grains
         public class GameManagerGrain : Grain, IGameManagerGrain
         {
             private int nextGameId = 0;
-            private readonly Hashids hashids = new();
+            private readonly Hashids hashids = new(salt: Guid.NewGuid().ToString(), minHashLength: 12);
 
             private HashSet<string> activeGameCodes = new();
 

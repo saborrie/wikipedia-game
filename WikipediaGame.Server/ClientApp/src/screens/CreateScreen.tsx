@@ -1,7 +1,6 @@
 import React from "react";
 import { useGame } from "../game";
 import Root from "../components/Root";
-import { Link } from "react-router-dom";
 import {
   AppBar,
   Card,
@@ -13,15 +12,10 @@ import {
   Typography,
   TextField,
   Button,
-  IconButton,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
 
-import BackIcon from "@mui/icons-material/ArrowBack";
-
-export default function JoinScreen() {
+export default function CreateScreen() {
   const game = useGame();
-  const gameCode: string = useParams().gameCode!;
 
   const [name, setName] = React.useState("");
 
@@ -30,17 +24,9 @@ export default function JoinScreen() {
       <AppBar position="static">
         <Container maxWidth="sm">
           <Toolbar disableGutters>
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              sx={{ mr: 2 }}
-              component={Link}
-              to="/"
-            >
-              <BackIcon />
-            </IconButton>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Wikipedia Game
+            </Typography>
           </Toolbar>
         </Container>
       </AppBar>
@@ -49,7 +35,7 @@ export default function JoinScreen() {
         <Card>
           <CardContent>
             <Typography gutterBottom variant="h5">
-              Join Game
+              Create new game
             </Typography>
 
             <TextField
@@ -61,8 +47,8 @@ export default function JoinScreen() {
             />
           </CardContent>
           <CardActions>
-            <Button size="small" onClick={() => game?.joinGame(name, gameCode)}>
-              Join
+            <Button size="small" onClick={() => game?.createGame(name)}>
+              Create
             </Button>
           </CardActions>
         </Card>

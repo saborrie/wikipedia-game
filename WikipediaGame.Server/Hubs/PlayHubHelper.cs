@@ -15,7 +15,7 @@ namespace WikipediaGame.Server.Hubs
 
         public async Task UpdateAsync(string connectionId, ConnectionUpdate update)
         {
-            await this.hub.Clients.Client(connectionId).SendAsync("Update", update);
+            await this.hub.Clients.Group(connectionId).SendAsync("Update", update);
         }
 
         public record ConnectionUpdate
