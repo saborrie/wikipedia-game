@@ -6,10 +6,12 @@ namespace WikipediaGame.Server.Hubs
 {
     public class PlayHubHelper
     {
+        private readonly ILogger<PlayHubHelper> logger;
         private readonly IHubContext<PlayHub> hub;
 
-        public PlayHubHelper(IHubContext<PlayHub> hub)
+        public PlayHubHelper(ILogger<PlayHubHelper> logger, IHubContext<PlayHub> hub)
         {
+            this.logger = logger;
             this.hub = hub;
         }
 
@@ -37,6 +39,11 @@ namespace WikipediaGame.Server.Hubs
             public string? Clue { get; init; }
             public string? Username { get; init; }
             public IReadOnlyList<string>? Options { get; init; }
+        }
+
+        public async Task PingAsync(string connectionId)
+        {
+            await this.hub.Clients.Group(connectionId).SendAsync("Ping");
         }
 
         public record PlayerView

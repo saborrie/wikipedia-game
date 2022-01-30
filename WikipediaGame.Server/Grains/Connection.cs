@@ -20,24 +20,26 @@ namespace WikipediaGame.Server.Grains
             Task MakeGuessAsync(string username);
             Task StartRoundAsync();
             Task RequestUpdatedStateAsync();
-
-
+            Task AckPing();
         }
 
         public class ConnectionGrain : Grain, IConnectionGrain, Game.IGameObserver
         {
+            private readonly ILogger<ConnectionGrain> logger;
             private readonly PlayHubHelper hub;
             private string? gameCode;
             private string? username;
             private DateTime? lastDisconnected;
             private IDisposable? checkDisconnectionTimer;
+            private IDisposable pingTimer;
             private PlayHubHelper.ConnectionUpdate lastState;
             private readonly static TimeSpan diconnectionTimeSpan = TimeSpan.FromMinutes(1);
 
             public string ConnectionId => this.GetPrimaryKeyString();
 
-            public ConnectionGrain(PlayHubHelper hub)
+            public ConnectionGrain(ILogger<ConnectionGrain> logger, PlayHubHelper hub)
             {
+                this.logger = logger;
                 this.hub = hub;
             }
 
@@ -48,6 +50,8 @@ namespace WikipediaGame.Server.Grains
                 
                 this.checkDisconnectionTimer = this.RegisterTimer(this.CheckDisconnection, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
 
+                this.pingTimer = this.RegisterTimer(this.PingAsync, null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(20));
+
                 await base.OnActivateAsync();
             }
 
@@ -56,6 +60,7 @@ namespace WikipediaGame.Server.Grains
                 if (this.lastDisconnected.HasValue && (this.lastDisconnected.Value + diconnectionTimeSpan) < DateTime.UtcNow)
                 {
                     this.checkDisconnectionTimer?.Dispose();
+                    this.pingTimer?.Dispose();
                     await this.LeaveGameAsync();
                     this.DeactivateOnIdle();
                 }
@@ -239,6 +244,20 @@ namespace WikipediaGame.Server.Grains
                 this.SendUpdatedState();
                 return Task.CompletedTask;
             }
+
+            public Task AckPing()
+            {
+                // TODO figure out what to do when we get this back.
+                this.logger.LogInformation("Ping acknowledged {connectionId}", this.ConnectionId);
+                return Task.CompletedTask;
+            }
+
+            private async Task PingAsync(object arg)
+            {
+                await this.hub.PingAsync(this.ConnectionId);
+                this.logger.LogInformation("Pinged {connectionId}.", this.ConnectionId);
+            }
+
         }
     }
 }

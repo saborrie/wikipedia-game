@@ -31,6 +31,7 @@ namespace WikipediaGame.Server.Hubs
             await this.GetGrain().DisconnectAsync();
         }
 
+        public async Task AckPing() => await this.GetGrain().AckPing();
         public async Task CreateGame(string username) => await this.GetGrain().CreateGameAsync(username);
         public async Task JoinGame(string username, string gameCode) => await this.GetGrain().JoinGameAsync(username, gameCode);
         public async Task LeaveGame() => await this.GetGrain().LeaveGameAsync();

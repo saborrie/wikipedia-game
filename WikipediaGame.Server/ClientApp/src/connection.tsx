@@ -37,6 +37,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       newConnection.onreconnected(() => {
         setConnection(Object.assign(newConnection, { playerId }));
       });
+
+      newConnection.on("Ping", () => newConnection.send("AckPing"));
     }
 
     setupConnection();
